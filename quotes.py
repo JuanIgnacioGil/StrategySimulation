@@ -16,13 +16,49 @@ default_trading_universe = ['AAPL', 'AXP', 'BA', 'CAT', 'CVX', 'CSCO', 'DIS', 'D
 Default trading universe
 """
 
+def download_quote(ticker, start_date=pd.to_datetime('today') - pd.Timedelta(days=365),
+                   end_date=pd.to_datetime('today')):
+    """
+    Downloads historical data of a quote from Google Finance
+
+    Parameters
+    ----------
+    ticker : str
+        Ticker symbol
+    start_date : date
+        First historical date to retrieve
+        Defaults to 1 year ago
+    end_date : date
+        Last historical date to retrieve.
+        Defaults to today
+
+    Returns
+    -------
+    bool
+        True if successful, False otherwise.
+    """
+
+    # Generate the Google url
+    url = ''.join(['http://www.google.com/finance/historical?q=NASDAQ%3A{}'.format(ticker),
+                   '&startdate={}+{}+{}'.format(start_date.month, start_date.day, start_date.year),
+                   '&enddate={}+{}+{}&output=csv'.format(end_date.day, end_date.month, end_date.year)])
+
+    url = 'http://www.google.com/finance/historical?q=NASDAQ%3A{}&output=csv'.format(ticker)
+
+    print(url)
+
+    quote = pd.read_csv(url, index_col='Date')
+
+    return quote
+
+
 class Quotes():
     """Class to download and store quotes
 
     Attributes
     ----------
     data : dict
-        Dictionary in the form {'quote': pd.DataFrame}, where every DataFrame has columns
+        Dictionary in the form {'symbol': pd.DataFrame}, where every DataFrame has columns
         ['Open', 'High', 'Low', 'Close', 'Volume'] and date as index
     """
 
@@ -46,7 +82,7 @@ class Quotes():
         return s
 
     def download(self, start_date=pd.to_datetime('today') - pd.Timedelta(days=365), end_date=pd.to_datetime('today')):
-        """Downloads historical data from Google Finance
+        """Downloads historical data from Google Finance for all quotes in the trading universe of the object
 
         Parameters
         ----------
@@ -61,8 +97,10 @@ class Quotes():
         -------
         bool
             True if successful, False otherwise.
-
         """
+
+        for q in self.data.keys():
+            self.data['q'] = download_quote(q, start_date, end_date)
 
 
 # Main function
@@ -70,5 +108,7 @@ class Quotes():
 # Generates an instance of Quote and download the data from Google Finance for the default list of equities
 if __name__ == "__main__":
 
-    quotes = Quotes()
-    print(quotes)
+    #quotes = Quotes()
+    #quotes.download(start_date=pd.datetime(2016, 1, 1), end_date=pd.datetime(2017, 1, 1))
+    q = download_quote('AAPL')
+    print(q)
