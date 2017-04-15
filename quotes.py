@@ -51,9 +51,14 @@ class Quotes():
 
     Attributes
     ----------
-    data : dict
-        Dictionary in the form {'symbol': pd.DataFrame}, where every DataFrame has columns
-        ['Open', 'High', 'Low', 'Close', 'Volume'] and date as index
+    symbols : list of str
+        List of ticker symbols
+    open : pandas.DataFrame
+        Historical Data for the open prices, with a column for each equity
+    high : pandas.DataFrame
+    low :  pandas.DataFrame
+    close : pandas.DataFrame
+    volume : pandas.DataFrame
     """
 
     def __init__(self, trading_universe=default_trading_universe, download=True, **kwargs):
@@ -79,8 +84,13 @@ class Quotes():
         if isinstance(trading_universe, str):
             trading_universe = [trading_universe]
 
-        self.data = {q: pd.DataFrame(columns=['Open', 'High', 'Low', 'Close', 'Volume'])
-                     for q in trading_universe}
+        self.symbols = trading_universe
+
+        self.open = pd.DataFrame()
+        self.close = pd.DataFrame()
+        self.high = pd.DataFrame()
+        self.low = pd.DataFrame()
+        self.volume = pd.DataFrame()
 
         # If download is True, download data from Google Finance
         if download:
@@ -90,13 +100,7 @@ class Quotes():
 
     def __str__(self):
 
-        s = ''
-        separator = ''.join(50 * ['-'])
-
-        for q, df in sorted(self.data.items()):
-            s += '{}:\n{}\n{}\n'.format(q, df.describe(), separator)
-
-        return s
+        return 'Quote: {}'.format(self.symbols)
 
     def download(self, start_date=pd.to_datetime('today') - pd.Timedelta(days=365), end_date=pd.to_datetime('today')):
         """Downloads historical data from Google Finance for all quotes in the trading universe of the object
@@ -112,13 +116,20 @@ class Quotes():
 
         Notes
         ----------
-        If the download does not work for a quote, the function outputs a warning and continues, leaving an empty
-        DataFrame
+        If the download does not work for a quote, the function outputs a warning and continues, 
+        without trying to add the data
         """
 
-        for ticker in self.data.keys():
+        for ticker in self.symbols:
             try:
-                self.data[ticker] = download_quote(ticker, start_date, end_date)
+                data = download_quote(ticker, start_date, end_date)
+
+                self.open[ticker] = data['Open']
+                self.close[ticker] = data['Close']
+                self.high[ticker] = data['High']
+                self.low[ticker] = data['Low']
+                self.volume[ticker] = data['Volume']
+
             except:
                 w_string = 'No data for {}'.format(ticker)
                 warn(w_string)
@@ -130,5 +141,9 @@ class Quotes():
 # Generates an instance of Quote and download the data from Google Finance for the default list of equities
 if __name__ == "__main__":
 
+    import matplotlib.pyplot as plt
+
     quotes = Quotes()
     print(quotes)
+    quotes.close.plot()
+    plt.show()
