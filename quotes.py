@@ -93,7 +93,7 @@ class Quotes():
         s = ''
         separator = ''.join(50 * ['-'])
 
-        for q, df in self.data.items():
+        for q, df in sorted(self.data.items()):
             s += '{}:\n{}\n{}\n'.format(q, df.describe(), separator)
 
         return s
