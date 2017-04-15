@@ -2,6 +2,7 @@
 """Example NumPy style docstrings.
 
 Download quotes from Google Finance
+Created by Juan Ignacio Gil Gomez, 2017-04-14
 
 """
 
@@ -9,7 +10,7 @@ import pandas as pd
 import pandas_datareader.data as web
 from warnings import warn
 
-default_trading_universe = ['AAPL', 'noexiste', 'AXP', 'BA', 'CAT', 'CVX', 'CSCO', 'DIS', 'DD', 'XOM', 'GE', 'GS', 'HD', 'IBM',
+default_trading_universe = ['AAPL', 'AXP', 'BA', 'CAT', 'CVX', 'CSCO', 'DIS', 'DD', 'XOM', 'GE', 'GS', 'HD', 'IBM',
                     'INTC', 'JNJ', 'JPM', 'KO', 'MCD', 'MMM', 'MRK', 'MSFT', 'NKE', 'PFE', 'PG', 'TRV', 'UTX',
                     'UNH', 'VZ', 'V', 'WMT']
 
@@ -36,8 +37,8 @@ def download_quote(ticker, start_date=pd.to_datetime('today') - pd.Timedelta(day
 
     Returns
     -------
-    bool
-        True if successful, False otherwise.
+    pandas.DataFrame
+        DataFrame with the requested historical data
     """
 
     quote = web.DataReader(ticker, 'google', start_date, end_date)
@@ -55,7 +56,24 @@ class Quotes():
         ['Open', 'High', 'Low', 'Close', 'Volume'] and date as index
     """
 
-    def __init__(self, trading_universe=default_trading_universe):
+    def __init__(self, trading_universe=default_trading_universe, download=True, **kwargs):
+
+        """Example of docstring on the __init__ method.
+
+        Parameters
+        ----------
+        trading_universe : list of str
+            List of ticker symbols
+        download : bool
+            If True (default) download data from Google Finance
+        **kwargs
+            start_date : date
+                First historical date to retrieve
+                Defaults to 1 year ago
+            end_date : date
+                Last historical date to retrieve.
+                Defaults to today
+        """
 
         # If we work with a single quote, convert it to a list
         if isinstance(trading_universe, str):
@@ -63,6 +81,12 @@ class Quotes():
 
         self.data = {q: pd.DataFrame(columns=['Open', 'High', 'Low', 'Close', 'Volume'])
                      for q in trading_universe}
+
+        # If download is True, download data from Google Finance
+        if download:
+            start_date = kwargs.get('start_date', pd.to_datetime('today') - pd.Timedelta(days=365))
+            end_date = kwargs.get('end_date', pd.to_datetime('today'))
+            self.download(start_date=start_date, end_date=end_date)
 
     def __str__(self):
 
@@ -86,9 +110,10 @@ class Quotes():
             Last historical date to retrieve.
             Defaults to today
 
-        Warnings
+        Notes
         ----------
-        
+        If the download does not work for a quote, the function outputs a warning and continues, leaving an empty
+        DataFrame
         """
 
         for ticker in self.data.keys():
@@ -106,5 +131,4 @@ class Quotes():
 if __name__ == "__main__":
 
     quotes = Quotes()
-    quotes.download(start_date=pd.datetime(2016, 1, 1), end_date=pd.datetime(2017, 1, 1))
     print(quotes)
