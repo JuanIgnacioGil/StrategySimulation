@@ -6,8 +6,10 @@ Download quotes from Google Finance
 """
 
 import pandas as pd
+import pandas_datareader.data as web
+from warnings import warn
 
-default_trading_universe = ['AAPL', 'AXP', 'BA', 'CAT', 'CVX', 'CSCO', 'DIS', 'DD', 'XOM', 'GE', 'GS', 'HD', 'IBM',
+default_trading_universe = ['AAPL', 'noexiste', 'AXP', 'BA', 'CAT', 'CVX', 'CSCO', 'DIS', 'DD', 'XOM', 'GE', 'GS', 'HD', 'IBM',
                     'INTC', 'JNJ', 'JPM', 'KO', 'MCD', 'MMM', 'MRK', 'MSFT', 'NKE', 'PFE', 'PG', 'TRV', 'UTX',
                     'UNH', 'VZ', 'V', 'WMT']
 
@@ -38,16 +40,7 @@ def download_quote(ticker, start_date=pd.to_datetime('today') - pd.Timedelta(day
         True if successful, False otherwise.
     """
 
-    # Generate the Google url
-    url = ''.join(['http://www.google.com/finance/historical?q=NASDAQ%3A{}'.format(ticker),
-                   '&startdate={}+{}+{}'.format(start_date.month, start_date.day, start_date.year),
-                   '&enddate={}+{}+{}&output=csv'.format(end_date.day, end_date.month, end_date.year)])
-
-    url = 'http://www.google.com/finance/historical?q=NASDAQ%3A{}&output=csv'.format(ticker)
-
-    print(url)
-
-    quote = pd.read_csv(url, index_col='Date')
+    quote = web.DataReader(ticker, 'google', start_date, end_date)
 
     return quote
 
@@ -93,14 +86,18 @@ class Quotes():
             Last historical date to retrieve.
             Defaults to today
 
-        Returns
-        -------
-        bool
-            True if successful, False otherwise.
+        Warnings
+        ----------
+        
         """
 
-        for q in self.data.keys():
-            self.data['q'] = download_quote(q, start_date, end_date)
+        for ticker in self.data.keys():
+            try:
+                self.data[ticker] = download_quote(ticker, start_date, end_date)
+            except:
+                w_string = 'No data for {}'.format(ticker)
+                warn(w_string)
+
 
 
 # Main function
@@ -108,7 +105,6 @@ class Quotes():
 # Generates an instance of Quote and download the data from Google Finance for the default list of equities
 if __name__ == "__main__":
 
-    #quotes = Quotes()
-    #quotes.download(start_date=pd.datetime(2016, 1, 1), end_date=pd.datetime(2017, 1, 1))
-    q = download_quote('AAPL')
-    print(q)
+    quotes = Quotes()
+    quotes.download(start_date=pd.datetime(2016, 1, 1), end_date=pd.datetime(2017, 1, 1))
+    print(quotes)
