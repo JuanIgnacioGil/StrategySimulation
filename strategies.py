@@ -75,15 +75,27 @@ class Strategy(object):
                       'Close Signal: {}'.format(self.close_signal)])
         return s
 
-    def backtest(self, csv_file=''):
+    def backtest(self, **kwargs):
         """Backtest the strategy with the data stored in self.quotes
 
         Parameters
         ----------
-        csv_file : str
-            Path of the csv file to save the pnl DataFrame
-            Defaults to '', and no file is written 
-        
+        **kwargs
+            csv_file : str
+                Path of the csv file to save the pnl DataFrame
+                Defaults to '', and no file is written 
+                
+            open_signal : function
+                open signal function. Defaults to self.open_signal
+            
+            close_signal : function
+                close signal function. Defaults to self.open_signal
+            
+            decimals : int
+                Number of decimals to get in the pnl (to make the result more readable. 
+                Defaults to None, where no rounding is made)
+                
+             
         Returns
         ----------
         open_actions : pandas.DataFrame
@@ -96,24 +108,32 @@ class Strategy(object):
             DataFrame with money win or lost each day for each symbol
         """
 
+        csv_file = kwargs.get('csv_file', '')
+        open_signal = kwargs.get('open_signal', self.open_signal)
+        close_signal = kwargs.get('close_signal', self.close_signal)
+        decimals = kwargs.get('decimals', None)
+
         dates = [t for t in pd.date_range(self.start_date, self.end_date) if t in self.quotes.close.index]
 
         open_actions = pd.DataFrame(0, index=dates, columns=self.quotes.symbols)
         close_actions = pd.DataFrame(0, index=dates, columns=self.quotes.symbols)
 
         for t in dates:
-            open_actions.loc[t, :] = self.open_signal(t, self.quotes, open_actions, close_actions)
+            open_actions.loc[t, :] = open_signal(t, self.quotes, open_actions, close_actions)
 
             # At last day closing we close all open position, regardless of the close signal
             if t == dates[-1]:
                 close_actions.loc[t, :] = close_all(t, self.quotes, open_actions, close_actions)
             else:
-                close_actions.loc[t, :] = self.close_signal(t, self.quotes, open_actions, close_actions)
+                close_actions.loc[t, :] = close_signal(t, self.quotes, open_actions, close_actions)
 
         # Now we can calculate the pnl without loops
         pnl = -open_actions * self.quotes.open.loc[dates, :] -\
               close_actions * self.quotes.close.loc[dates, :] - \
               (abs(open_actions) + abs(close_actions)) * self.spread
+
+        if decimals:
+            pnl = pnl.round(decimals)
 
         # If asked, save the pnl in a csv file
         if csv_file:
@@ -329,7 +349,7 @@ if __name__ == "__main__":
     s = Strategy(start_date=pd.datetime(2016, 1, 1), end_date=pd.datetime(2017, 1, 1),
                  open_signal=volatility_strategy, close_signal=close_daily_positions)
 
-    pnl, open_actions, close_actions = s.backtest(csv_file='volatility.csv')
+    pnl, open_actions, close_actions = s.backtest(csv_file='volatility.csv', decimals=2)
 
     trace1 = go.Scatter(x=pnl.index, y=pnl.sum(axis=1).cumsum())
     trace2 = go.Histogram(x=pnl.sum(axis=1))
