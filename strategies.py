@@ -75,12 +75,14 @@ class Strategy(object):
                       'Close Signal: {}'.format(self.close_signal)])
         return s
 
-    def backtest(self):
+    def backtest(self, csv_file=''):
         """Backtest the strategy with the data stored in self.quotes
 
         Parameters
         ----------
-        **kwargs
+        csv_file : str
+            Path of the csv file to save the pnl DataFrame
+            Defaults to '', and no file is written 
         
         Returns
         ----------
@@ -112,6 +114,10 @@ class Strategy(object):
         pnl = -open_actions * self.quotes.open.loc[dates, :] -\
               close_actions * self.quotes.close.loc[dates, :] - \
               (abs(open_actions) + abs(close_actions)) * self.spread
+
+        # If asked, save the pnl in a csv file
+        if csv_file:
+            pnl.to_csv(csv_file)
 
         return pnl, open_actions, close_actions
 
@@ -323,9 +329,7 @@ if __name__ == "__main__":
     s = Strategy(start_date=pd.datetime(2016, 1, 1), end_date=pd.datetime(2017, 1, 1),
                  open_signal=volatility_strategy, close_signal=close_daily_positions)
 
-    pnl, open_actions, close_actions = s.backtest()
-
-    print(open_actions)
+    pnl, open_actions, close_actions = s.backtest(csv_file='volatility.csv')
 
     trace1 = go.Scatter(x=pnl.index, y=pnl.sum(axis=1).cumsum())
     trace2 = go.Histogram(x=pnl.sum(axis=1))
