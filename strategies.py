@@ -41,10 +41,10 @@ class Strategy(object):
                 Quote instance, with market data.
             open_signal : function
                 Function that returns a list with position changes at market open
-                By default, mimic_open
+                By default, buy_at_start
             close_signal : function
                 Function that returns a list with position changes at market close
-                By default, close_daily_positions
+                By default, hold
             start_date : date
                 First historical date to retrieve
                 Defaults to 1 year ago
@@ -57,9 +57,9 @@ class Strategy(object):
         self.start_date = kwargs.get('start_date', pd.to_datetime('today') - pd.Timedelta(days=365))
         self.end_date = kwargs.get('end_date', pd.to_datetime('today'))
         self.quotes = kwargs.get('quotes',
-                            Quotes(start_date=self.start_date - pd.Timedelta(days=30), end_date=self.end_date))
-        self.open_signal = kwargs.get('open_signal', mimic_open)
-        self.close_signal = kwargs.get('open_signal', close_daily_positions)
+                                 Quotes(start_date=self.start_date - pd.Timedelta(days=30), end_date=self.end_date))
+        self.open_signal = kwargs.get('open_signal', buy_at_start)
+        self.close_signal = kwargs.get('close_signal', hold)
         self.spread = kwargs.get('spread', 0)
 
         # If quotes is not a Quotes instance, but a list of ticker symbols, generate a Quote from them
@@ -96,12 +96,17 @@ class Strategy(object):
 
         dates = [t for t in pd.date_range(self.start_date, self.end_date) if t in self.quotes.close.index]
 
-        open_actions = pd.DataFrame(index=dates, columns=self.quotes.symbols)
-        close_actions = pd.DataFrame(index=dates, columns=self.quotes.symbols)
+        open_actions = pd.DataFrame(0, index=dates, columns=self.quotes.symbols)
+        close_actions = pd.DataFrame(0, index=dates, columns=self.quotes.symbols)
 
         for t in dates:
             open_actions.loc[t, :] = self.open_signal(t, self.quotes, open_actions, close_actions)
-            close_actions.loc[t, :] = self.close_signal(t, self.quotes, open, close_actions)
+
+            # At last day closing we close all open position, regardless of the close signal
+            if t == dates[-1]:
+                close_actions.loc[t, :] = close_all(t, self.quotes, open_actions, close_actions)
+            else:
+                close_actions.loc[t, :] = self.close_signal(t, self.quotes, open_actions, close_actions)
 
         # Now we can calculate the pnl without loops
         pnl = -open_actions * self.quotes.open.loc[dates, :] -\
@@ -112,6 +117,94 @@ class Strategy(object):
 
 
 # Strategies
+
+def buy_at_start(t, quotes, open_actions, close_actions):
+    """Buy a stock of each asset if it's the first day of strategy
+        Stay neutral otherwise
+
+    Parameters
+    ----------
+    t : date
+        Date of the session
+
+    quotes : Quotes
+        Market data
+
+    open_actions : pandas.DataFrame
+        DataFrame with the actions taken in the session open
+
+    close_actions : pandas.DataFrame
+        DataFrame with the actions taken in the session close
+
+    Returns
+    ----------
+    pandas.DataFrame
+        DataFrame with the actions on the open of t
+    """
+
+    if t == open_actions.index[0]:
+        actions = np.ones(open_actions.shape[1])
+    else:
+        actions = np.zeros(open_actions.shape[1])
+
+    return actions
+
+
+def hold(t, quotes, open_actions, close_actions):
+    """Do nothing
+
+    Parameters
+    ----------
+    t : date
+        Date of the session
+
+    quotes : Quotes
+        Market data
+
+    open_actions : pandas.DataFrame
+        DataFrame with the actions taken in the session open
+
+    close_actions : pandas.DataFrame
+        DataFrame with the actions taken in the session close
+
+    Returns
+    ----------
+    pandas.DataFrame
+        DataFrame with the actions on the open of t
+    """
+
+    return np.zeros(open_actions.shape[1])
+
+
+def close_all(t, quotes, open_actions, close_actions):
+    """Close all open positions
+
+    Parameters
+    ----------
+    t : date
+        Date of the session
+
+    quotes : Quotes
+        Market data
+
+    open_actions : pandas.DataFrame
+        DataFrame with the actions taken in the session open
+
+    close_actions : pandas.DataFrame
+        DataFrame with the actions taken in the session close
+
+    Returns
+    ----------
+    pandas.DataFrame
+        DataFrame with the actions on the open of t
+    """
+
+    # Note that this assumes that actions start filled with zeros
+    open_positions = (open_actions.loc[open_actions.index <= t,:] +
+                      close_actions.loc[close_actions.index <= t,:]).sum().as_matrix()
+
+    return -open_positions
+
 
 def mimic_open(t, quotes, open_actions, close_actions):
     """Mimic strategy at session open:
@@ -177,17 +270,23 @@ def close_daily_positions(t, quotes, open_actions, close_actions):
     return -open_actions.loc[t, :]
 
 
-
 # Main function
 
 # Generates an instance of Quote and download the data from Google Finance for the default list of equities
 if __name__ == "__main__":
+    from plotly import tools
+    import plotly.offline as plotly
+    import plotly.graph_objs as go
 
-    import matplotlib.pyplot as plt
     s = Strategy(start_date=pd.datetime(2016, 1, 1), end_date=pd.datetime(2017, 1, 1),
                  open_signal=mimic_open, close_signal=close_daily_positions)
 
     pnl, open_actions, close_actions = s.backtest()
-    pnl.sum(axis=1).cumsum().plot()
-    pnl.sum(axis=1).plot(kind='hist')
-    plt.show()
+
+    trace1 = go.Scatter(x=pnl.index, y=pnl.sum(axis=1).cumsum())
+    trace2 = go.Histogram(x=pnl.sum(axis=1))
+    fig = tools.make_subplots(rows=2, cols=1)
+
+    fig.append_trace(trace1, 1, 1)
+    fig.append_trace(trace2, 2, 1)
+    plotly.plot(fig)
