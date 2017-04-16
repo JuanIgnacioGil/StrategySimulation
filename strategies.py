@@ -141,6 +141,55 @@ class Strategy(object):
 
         return pnl, open_actions, close_actions
 
+    def summary(self, signals, **kwargs):
+        """Backtest the strategy for a list of different signals and writes a summary with the results, and a
+            csv file for each one
+
+        Parameters
+        ----------
+        signals : list of tuple
+            list of open and close signals, in the form [(name, open1, close1), (name, open2, close2)]
+        
+        **kwargs
+            file : str
+                Path of the txt file to save the summary
+                Defaults to 'summary.txt'
+
+            decimals : int
+                Number of decimals to get in the pnl (to make the result more readable. 
+                Defaults to None, where no rounding is made)
+
+
+        Returns
+        ----------
+        open_actions : pandas.DataFrame
+            DataFrame with actions taken at session open (one column per symbol, where, for example, -1 represents
+            selling 1 stock)
+        close_actions : pandas.DataFrame
+            DataFrame with actions taken at session open (one column per symbol, where, for example, 2 represents
+            buying 2 stocks)
+        pnl : pandas.DataFrame
+            DataFrame with money win or lost each day for each symbol
+        """
+
+        text_file = kwargs.get('file', 'summary.txt')
+        decimals = kwargs.get('decimals', None)
+
+        separator = ''.join(['-'] * 100 + ['\n'])
+
+        with open(text_file, "w") as output:
+            for s in signals:
+                output.write('Strategy: {}\n'.format(s[0]))
+                output.write('Open signal: {}\n'.format(s[1]))
+                output.write('Close signal: {}\n'.format(s[2]))
+
+                pnl, open_actions, close_actions = self.backtest(open_signal=s[1], close_signal=s[2],
+                                                             csv_file=s[0] + '.csv', decimals=decimals)
+
+                output.write('Total pnl: {}\n'.format(pnl.sum().sum().round(decimals)))
+                output.write('\nDaily pnl:\n{}\n'.format(pnl.sum(axis=1).describe()))
+                output.write(separator)
+
 
 # Strategies
 
@@ -342,19 +391,11 @@ def volatility_strategy(t, quotes, open_actions, close_actions):
 
 # Generates an instance of Quote and download the data from Google Finance for the default list of equities
 if __name__ == "__main__":
-    from plotly import tools
-    import plotly.offline as plotly
-    import plotly.graph_objs as go
 
-    s = Strategy(start_date=pd.datetime(2016, 1, 1), end_date=pd.datetime(2017, 1, 1),
+    st = Strategy(start_date=pd.datetime(2016, 1, 1), end_date=pd.datetime(2017, 1, 1),
                  open_signal=volatility_strategy, close_signal=close_daily_positions)
 
-    pnl, open_actions, close_actions = s.backtest(csv_file='volatility.csv', decimals=2)
+    strategies = [('mimic', mimic_open, close_daily_positions),
+                  ('volatility', volatility_strategy, close_daily_positions)]
 
-    trace1 = go.Scatter(x=pnl.index, y=pnl.sum(axis=1).cumsum())
-    trace2 = go.Histogram(x=pnl.sum(axis=1))
-    fig = tools.make_subplots(rows=2, cols=1)
-
-    fig.append_trace(trace1, 1, 1)
-    fig.append_trace(trace2, 2, 1)
-    plotly.plot(fig)
+    st.summary(strategies, decimals=2)

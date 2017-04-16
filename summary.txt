@@ -1,0 +1,32 @@
+Strategy: mimic
+Open signal: <function mimic_open at 0x10b5a59d8>
+Close signal: <function close_daily_positions at 0x10b5a5a60>
+Total pnl: 3.11
+
+Daily pnl:
+count    252.000000
+mean       0.012341
+std        9.148314
+min      -46.980000
+25%       -3.697500
+50%        0.560000
+75%        5.100000
+max       44.920000
+dtype: float64
+----------------------------------------------------------------------------------------------------
+Strategy: volatility
+Open signal: <function volatility_strategy at 0x10b5a5ae8>
+Close signal: <function close_daily_positions at 0x10b5a5a60>
+Total pnl: -174.02
+
+Daily pnl:
+count    252.000000
+mean      -0.690556
+std        6.829222
+min      -28.900000
+25%       -4.180000
+50%       -0.575000
+75%        2.835000
+max       23.660000
+dtype: float64
+----------------------------------------------------------------------------------------------------
