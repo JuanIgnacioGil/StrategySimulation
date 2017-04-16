@@ -19,8 +19,7 @@ default_trading_universe = ['AAPL', 'AXP', 'BA', 'CAT', 'CVX', 'CSCO', 'DIS', 'D
 Default trading universe
 """
 
-def download_quote(ticker, start_date=pd.to_datetime('today') - pd.Timedelta(days=365),
-                   end_date=pd.to_datetime('today')):
+def download_quote(ticker, start_date=pd.datetime(2000, 1, 1), end_date=pd.to_datetime('today')):
     """
     Downloads historical data of a quote from Google Finance
 
@@ -30,7 +29,7 @@ def download_quote(ticker, start_date=pd.to_datetime('today') - pd.Timedelta(day
         Ticker symbol
     start_date : date
         First historical date to retrieve
-        Defaults to 1 year ago
+        Defaults to 2000-1-1
     end_date : date
         Last historical date to retrieve.
         Defaults to today
@@ -74,7 +73,7 @@ class Quotes():
         **kwargs
             start_date : date
                 First historical date to retrieve
-                Defaults to 1 year ago
+                Defaults to 2000/1/1
             end_date : date
                 Last historical date to retrieve.
                 Defaults to today
@@ -94,7 +93,7 @@ class Quotes():
 
         # If download is True, download data from Google Finance
         if download:
-            start_date = kwargs.get('start_date', pd.to_datetime('today') - pd.Timedelta(days=365))
+            start_date = kwargs.get('start_date', pd.datetime(2000, 1, 1))
             end_date = kwargs.get('end_date', pd.to_datetime('today'))
             self.download(start_date=start_date, end_date=end_date)
 
@@ -102,14 +101,14 @@ class Quotes():
 
         return 'Quote: {}'.format(self.symbols)
 
-    def download(self, start_date=pd.to_datetime('today') - pd.Timedelta(days=365), end_date=pd.to_datetime('today')):
+    def download(self, start_date=pd.datetime(2000, 1, 1), end_date=pd.to_datetime('today')):
         """Downloads historical data from Google Finance for all quotes in the trading universe of the object
 
         Parameters
         ----------
         start_date : date
             First historical date to retrieve
-            Defaults to 1 year ago
+            Defaults to 2000-1-1
         end_date : date
             Last historical date to retrieve.
             Defaults to today

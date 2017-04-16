@@ -1,6 +1,6 @@
 Strategy: mimic
-Open signal: <function mimic_open at 0x10b5a59d8>
-Close signal: <function close_daily_positions at 0x10b5a5a60>
+Open signal: <function mimic_open at 0x105318950>
+Close signal: <function close_daily_positions at 0x1053189d8>
 Total pnl: 3.11
 
 Daily pnl:
@@ -15,8 +15,8 @@ max       44.920000
 dtype: float64
 ----------------------------------------------------------------------------------------------------
 Strategy: volatility
-Open signal: <function volatility_strategy at 0x10b5a5ae8>
-Close signal: <function close_daily_positions at 0x10b5a5a60>
+Open signal: <function volatility_strategy at 0x105318a60>
+Close signal: <function close_daily_positions at 0x1053189d8>
 Total pnl: -174.02
 
 Daily pnl:

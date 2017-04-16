@@ -183,7 +183,7 @@ class Strategy(object):
                 output.write('Open signal: {}\n'.format(s[1]))
                 output.write('Close signal: {}\n'.format(s[2]))
 
-                pnl, open_actions, close_actions = self.backtest(open_signal=s[1], close_signal=s[2],
+                pnl, _, _ = self.backtest(open_signal=s[1], close_signal=s[2],
                                                              csv_file=s[0] + '.csv', decimals=decimals)
 
                 output.write('Total pnl: {}\n'.format(pnl.sum().sum().round(decimals)))
@@ -310,9 +310,19 @@ def mimic_open(t, quotes, open_actions, close_actions):
     ----------
     pandas.DataFrame
         DataFrame with the actions on the open of t
+        
+    Raises
+    ----------
+    ValueError
+        If there is not enough data en self.quotes.close
     """
 
-    previous_day = max(quotes.close.index[quotes.close.index < t])
+    try:
+        previous_day = max(quotes.close.index[quotes.close.index < t])
+    except:
+        date_error = 'Cannot find the previous day to {} in self.quotes.close'.format(t)
+        raise(ValueError(date_error))
+
     previous_open = quotes.open.loc[previous_day, :]
     previous_close = quotes.close.loc[previous_day, :]
 
@@ -376,10 +386,19 @@ def volatility_strategy(t, quotes, open_actions, close_actions):
     ----------
     pandas.DataFrame
         DataFrame with the actions on the open of t
+        
+    Raises
+    ----------
+    ValueError
+        If there is not enough data en self.quotes.close
     """
 
-    previous_day = max(quotes.close.index[quotes.close.index < t])
-    two_days_ago = max(quotes.close.index[quotes.close.index < previous_day])
+    try:
+        previous_day = max(quotes.close.index[quotes.close.index < t])
+        two_days_ago = max(quotes.close.index[quotes.close.index < previous_day])
+    except:
+        date_error = 'Cannot find the two previous days to {} in self.quotes.close'.format(t)
+        raise(ValueError(date_error))
 
     vol_previous = (quotes.close.loc[previous_day, :] - quotes.open.loc[previous_day, :]) ** 2
     vol_two_days_ago = (quotes.close.loc[two_days_ago, :] - quotes.open.loc[two_days_ago, :]) ** 2
@@ -392,8 +411,7 @@ def volatility_strategy(t, quotes, open_actions, close_actions):
 # Generates an instance of Quote and download the data from Google Finance for the default list of equities
 if __name__ == "__main__":
 
-    st = Strategy(start_date=pd.datetime(2016, 1, 1), end_date=pd.datetime(2017, 1, 1),
-                 open_signal=volatility_strategy, close_signal=close_daily_positions)
+    st = Strategy(start_date=pd.datetime(2016, 1, 1), end_date=pd.datetime(2017, 1, 1))
 
     strategies = [('mimic', mimic_open, close_daily_positions),
                   ('volatility', volatility_strategy, close_daily_positions)]
