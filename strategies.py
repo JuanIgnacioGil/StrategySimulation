@@ -270,6 +270,48 @@ def close_daily_positions(t, quotes, open_actions, close_actions):
     return -open_actions.loc[t, :]
 
 
+def volatility_strategy(t, quotes, open_actions, close_actions):
+    """Volatility strategy
+
+            Buy 1 stock at market open, if daily volatility has reduced during the last trading
+            day. That is, buy if
+                (close - open) * (close - open) of the last trading day <
+                < (close - open) * (close - open) of two trading days ago.
+
+            Short sell 1 stock at market open, if daily volatility has increased during the last
+            trading day. That is, short sell if
+                (close - open) * (close - open) of the last trading day >
+                > (close - open) * (close - open) of two trading days ago.
+
+    Parameters
+    ----------
+    t : date
+        Date of the session
+
+    quotes : Quotes
+        Market data
+
+    open_actions : pandas.DataFrame
+        DataFrame with the actions taken in the session open
+
+    close_actions : pandas.DataFrame
+        DataFrame with the actions taken in the session close
+
+    Returns
+    ----------
+    pandas.DataFrame
+        DataFrame with the actions on the open of t
+    """
+
+    previous_day = max(quotes.close.index[quotes.close.index < t])
+    two_days_ago = max(quotes.close.index[quotes.close.index < previous_day])
+
+    vol_previous = (quotes.close.loc[previous_day, :] - quotes.open.loc[previous_day, :]) ** 2
+    vol_two_days_ago = (quotes.close.loc[two_days_ago, :] - quotes.open.loc[two_days_ago, :]) ** 2
+
+    return np.sign(vol_two_days_ago - vol_previous)
+
+
 # Main function
 
 # Generates an instance of Quote and download the data from Google Finance for the default list of equities
@@ -279,9 +321,11 @@ if __name__ == "__main__":
     import plotly.graph_objs as go
 
     s = Strategy(start_date=pd.datetime(2016, 1, 1), end_date=pd.datetime(2017, 1, 1),
-                 open_signal=mimic_open, close_signal=close_daily_positions)
+                 open_signal=volatility_strategy, close_signal=close_daily_positions)
 
     pnl, open_actions, close_actions = s.backtest()
+
+    print(open_actions)
 
     trace1 = go.Scatter(x=pnl.index, y=pnl.sum(axis=1).cumsum())
     trace2 = go.Histogram(x=pnl.sum(axis=1))
