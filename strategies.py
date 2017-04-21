@@ -408,12 +408,14 @@ def volatility_strategy(t, quotes, open_actions, close_actions):
 
 # Main function
 
-# Generates an instance of Quote and download the data from Google Finance for the default list of equities
 if __name__ == "__main__":
 
+    # Generate an instance of Strategy with the default market data
     st = Strategy(start_date=pd.datetime(2016, 1, 1), end_date=pd.datetime(2017, 1, 1))
 
+    # List of strategies to test
     strategies = [('mimic', mimic_open, close_daily_positions),
                   ('volatility', volatility_strategy, close_daily_positions)]
 
+    # Backtest
     st.summary(strategies, decimals=2)

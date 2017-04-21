@@ -142,7 +142,7 @@ if __name__ == "__main__":
 
     import matplotlib.pyplot as plt
 
-    quotes = Quotes()
+    quotes = Quotes(trading_universe=['AAPL', 'IBM'], start_date='2017-1-1')
     print(quotes)
     quotes.close.plot()
     plt.show()
