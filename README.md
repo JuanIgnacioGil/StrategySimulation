@@ -58,16 +58,19 @@ would backtest two different strategies, *mimic* and *volatility*, and generate 
 
 We have implemented some example strategies in the file ```strategies.py```:
 
-###buy\_at\_start ###
- Buy a stock of each asset if it's the first day of strategy. Stay neutral otherwise
+**buy\_at\_start**
+
+Buy a stock of each asset if it's the first day of strategy. Stay neutral otherwise
  
-###hold###
+**hold**
+
 Do nothing
 
-###close_all###
+**close_all**
+
 Close all open positions (this is executed at the end of every backtesting, to calculate the portfolio value)
 
-###mimic_open###
+**mimic_open**
 
 Mimic strategy at session open:
     
@@ -75,10 +78,12 @@ Mimic strategy at session open:
 * Short sell 1 stock at market open, if the close price of the previous trading day
 * Stay neutral otherwise.
 
-###close\_daily\_positions###
+**close\_daily\_positions**
+
 * Close all positions opened at session open
 
-###volatility_strategy###
+**volatility_strategy**
+
 
 * Buy 1 stock at market open, if daily volatility has reduced during the last trading day. That is, buy if
 	
