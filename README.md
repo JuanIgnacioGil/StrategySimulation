@@ -60,8 +60,10 @@ We have implemented some example strategies in the file ```strategies.py```:
 
 ###buy\_at\_start ###
  Buy a stock of each asset if it's the first day of strategy. Stay neutral otherwise
+ 
 ###hold###
 Do nothing
+
 ###close_all###
 Close all open positions (this is executed at the end of every backtesting, to calculate the portfolio value)
 
