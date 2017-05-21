@@ -38,6 +38,7 @@ def download_quote(ticker, start_date=pd.datetime(2000, 1, 1), end_date=pd.to_da
     -------
     pandas.DataFrame
         DataFrame with the requested historical data
+        
     """
 
     quote = web.DataReader(ticker, 'google', start_date, end_date)
@@ -77,6 +78,12 @@ class Quotes():
             end_date : date
                 Last historical date to retrieve.
                 Defaults to today
+                
+        Example
+        ------------
+            >>> quotes = Quotes(trading_universe=['AAPL'], start_date='2017-1-1', end_date='2017-1-31')
+            >>> abs(quotes.close.iloc[-1, 0] - 121.35) < 0.01
+            True
         """
 
         # If we work with a single quote, convert it to a list
@@ -140,9 +147,6 @@ class Quotes():
 # Generates an instance of Quote and download the data from Google Finance for the default list of equities
 if __name__ == "__main__":
 
-    import matplotlib.pyplot as plt
+    quotes = Quotes(trading_universe=['AAPL'], start_date='2017-1-1', end_date='2017-1-31')
+    print(quotes.close.iloc[-1, 0])
 
-    quotes = Quotes(trading_universe=['AAPL', 'IBM'], start_date='2017-1-1')
-    print(quotes)
-    quotes.close.plot()
-    plt.show()
