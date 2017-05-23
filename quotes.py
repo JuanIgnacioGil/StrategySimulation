@@ -7,6 +7,7 @@ Created by Juan Ignacio Gil Gomez, 2017-04-14
 """
 
 import pandas as pd
+import numpy as np
 import pandas_datareader.data as web
 from warnings import warn
 
@@ -70,7 +71,7 @@ class Quotes():
         trading_universe : list of str
             List of ticker symbols
         download : bool
-            If True (default) download data from Google Finance
+            If True (default) downsload data from Google Finance
         **kwargs
             start_date : date
                 First historical date to retrieve
@@ -141,12 +142,40 @@ class Quotes():
                 warn(w_string)
 
 
+    def find_biggest_jump(self):
+
+        intraday_jumps = np.abs(np.log(self.close) - np.log(self.open))
+        max_jumps = intraday_jumps.max(axis=0)
+        max_symbol = np.argmax(max_jumps)
+        day_max = np.argmax(intraday_jumps[max_symbol])
+
+        return day_max, max_symbol
+
+    def remove_biggest_jump(self):
+
+        #to_remove =  (pd.datetime(2016, 11, 9), 'DD')
+        to_remove = self.find_biggest_jump()
+
+        self.close.loc[to_remove[0], to_remove[1]] = self.open.loc[to_remove[0], to_remove[1]]
+
+
+
+
+
+
+
 
 # Main function
 
 # Generates an instance of Quote and download the data from Google Finance for the default list of equities
 if __name__ == "__main__":
 
-    quotes = Quotes(trading_universe=['AAPL'], start_date='2017-1-1', end_date='2017-1-31')
-    print(quotes.close.iloc[-1, 0])
+    from strategies import Strategy, mimic_open, close_daily_positions
+
+    quotes = Quotes(start_date=pd.datetime(2016, 1, 1), end_date=pd.datetime(2016, 12, 31))
+    j = quotes.find_biggest_jump()
+    quotes.remove_biggest_jump()
+    s = Strategy(quotes=quotes, open_signal=mimic_open, close_signal=close_daily_positions,
+                 start_date=pd.datetime(2016, 1, 1), end_date=pd.datetime(2017, 1, 1))
+    s.backtest(csv_file='removed.csv')
 
